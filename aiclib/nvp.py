@@ -49,11 +49,6 @@ def grab_uuid_of_type(text_or_dict, nvptype):
 
 
 class Connection(core.CoreLib):
-
-    def __init__(self, uri, poolmanager=None, username='admin',
-                 password='admin'):
-        super(Connection, self).__init__(uri, poolmanager, username, password)
-
     def nvp_function(self):
         entity = NVPFunction(self)
         return entity
@@ -114,20 +109,32 @@ class Connection(core.CoreLib):
         return entity
 
     def handle_status_code(self, code, iserror=False, message=None):
+        exception = None
+
         if code == 400 or code == 500:
-            raise NVPException(message)
+            exception = NVPException
+
         elif code == 403:
-            raise Forbidden(message)
+            exception = Forbidden
+
         elif code == 404:
-            raise ResourceNotFound(message)
+            exception = ResourceNotFound
+
         elif code == 408:
-            raise RequestTimeout(message)
+            exception = RequestTimeout
+
         elif code == 409:
-            raise Conflict(message)
+            exception = Conflict
+
         elif code == 503:
-            raise ServiceUnavailable(message)
+            exception = ServiceUnavailable
+
         elif iserror:
-            raise NVPException("Unhandled error occurred")
+            exception = NVPException
+            message = "Unhandled error occurred"
+
+        if exception is not None:
+            raise exception(message)
 
     def _action(self, entity, method, resource):
         """Will inject generation ID into the JSON result object if it exists
@@ -135,6 +142,7 @@ class Connection(core.CoreLib):
         try:
             r = super(Connection, self)._action(entity, method, resource)
         except core.AICException as e:
+            logger.exception('AICException')
             self.handle_status_code(e.code, iserror=True, message=e.message)
 
         self.handle_status_code(r.status)
