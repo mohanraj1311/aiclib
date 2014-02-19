@@ -23,6 +23,7 @@ Created on August 17, 2012
 import json
 import logging
 import errno
+import time
 import socket
 try:
     from urllib.parse import urlencode
@@ -41,7 +42,7 @@ logger = logging.getLogger(__name__)
 class CoreLib(object):
 
     def __init__(self, uri, poolmanager=None, username='admin',
-                 password='admin'):
+                 password='admin', **kwargs):
         """Constructor for the AICLib object.
 
         Arguments:
@@ -60,7 +61,8 @@ class CoreLib(object):
 
         self.connection = Connection(connection=self.conn,
                                      username=username,
-                                     password=password)
+                                     password=password,
+                                     **kwargs)
 
     def _action(self, entity, method, resource):
         if entity is None:
@@ -114,13 +116,15 @@ class Connection(object):
     _encode_url_methods = set(['DELETE', 'GET', 'HEAD', 'OPTIONS'])
     _encode_body_methods = set(['PATCH', 'POST', 'PUT', 'TRACE'])
 
-    def __init__(self, username, password, connection=None):
+    def __init__(self, username, password, connection=None, timeout=10,
+                 retries=3, backoff=2):
         self._conn = connection
         self.authenticated = False
         self.username = username
         self.password = password
-        self.maxRetries = 3
-        self.timeout = 10
+        self.retries = retries
+        self.timeout = timeout
+        self.backoff = backoff
         self._headers = {}
         self.generationnumber = 0
         self.authkey = ''
@@ -156,39 +160,60 @@ class Connection(object):
         }
         return self._headers
 
-    def request(self, method, apicall, generationnumber=0, body=None):
-        url = apicall
+    def request(self, method, url, generationnumber=0, body=None,
+                retries=None, backoff=None, is_url_prepared=False,
+                is_body_prepared=False):
+        if retries is None:
+            retries = self.retries
 
-        # TODO(jkoelker) refactor this to use the retry kwarg to urlopen
-        self.generationnumber = generationnumber
-        json_body = json.dumps(body)
-        for i in xrange(self.maxRetries):
-            try:
-                if method in self._encode_url_methods:
-                    logger.info("Encoded URL: %s" % urlencode(body))
-                    url += '?' + urlencode(body, doseq=True)
-                    r = self.connection.urlopen(method, url, retries=1,
-                                                timeout=self.timeout,
-                                                headers=self.headers)
-                else:
-                    r = self.connection.urlopen(method, apicall,
-                                                json_body,
-                                                timeout=self.timeout,
-                                                retries=1,
-                                                headers=self.headers)
-                if self._iserror(r):
-                    try:
-                        self._handle_error(r)
-                    except:
-                        logger.error("Unhandled error:")
-                        raise
-                return r
-            except urllib3.exceptions.TimeoutError:
-                continue
-            except nvp.RequestTimeout:
-                continue
-        if i == self.maxRetries - 1:
+        if backoff is None:
+            backoff = backoff
+
+        if retries < 0:
             raise AICException(408, 'Max retries reached')
+
+        self.generationnumber = generationnumber
+        open_args = [method]
+        open_kwargs = {'retries': 1, 'timeout': self.timeout,
+                       'headers': self.headers}
+
+        if body:
+            if method in self._encode_url_methods and not is_url_prepared:
+                params = urlencode(body, doseq=True)
+                logger.info("Encoded URL: %s" % params)
+                url = url + '?' + params
+
+            elif is_body_prepared:
+                open_kwargs['body'] = json.dumps(body)
+
+        open_args.append(url)
+
+        try:
+            r = self.connection.urlopen(*open_args, **open_kwargs)
+
+            if self._iserror(r):
+                try:
+                    self._handle_error(r)
+                except:
+                    logger.error("Unhandled error: reraising.")
+                    raise
+
+            return r
+
+        except (urllib3.exceptions.TimeoutError, nvp.RequestTimeout):
+            retries = retries - 1
+            logger.exception(' '.join(('Timeout talking to NVP.',
+                                       'Will retry %s more times.')),
+                             retries)
+
+            # NOTE(jkoelker) Lets be nice(er) to NVP with an exponential
+            #                backoff.
+            time.sleep(backoff)
+            backoff = backoff ** 2
+
+            return self.request(method, url, generationnumber=generationnumber,
+                                body=body, retries=retries, backoff=backoff,
+                                is_url_prepared=True, is_body_prepared=True)
 
     def _handle_headers(self, resp):
         return
