@@ -19,7 +19,7 @@ import setuptools
 
 setuptools.setup(
     name='aiclib',
-    version="0.82",
+    version="0.83",
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: Apache Software License',
