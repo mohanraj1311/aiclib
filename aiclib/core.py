@@ -163,11 +163,14 @@ class Connection(object):
     def request(self, method, url, generationnumber=0, body=None,
                 retries=None, backoff=None, is_url_prepared=False,
                 is_body_prepared=False):
+        if not self.authenticated:
+            self._login(self.username, self.password)
+
         if retries is None:
             retries = self.retries
 
         if backoff is None:
-            backoff = backoff
+            backoff = self.backoff
 
         if retries < 0:
             raise AICException(408, 'Max retries reached')
@@ -183,8 +186,10 @@ class Connection(object):
                 logger.info("Encoded URL: %s" % params)
                 url = url + '?' + params
 
-            elif is_body_prepared:
-                open_kwargs['body'] = json.dumps(body)
+            else:
+                if not is_body_prepared:
+                    body = json.dumps(body)
+                open_kwargs['body'] = body
 
         open_args.append(url)
 
@@ -197,23 +202,24 @@ class Connection(object):
                 except:
                     logger.error("Unhandled error: reraising.")
                     raise
-
-            return r
+            else:
+                return r
 
         except (urllib3.exceptions.TimeoutError, nvp.RequestTimeout):
-            retries = retries - 1
             logger.exception(' '.join(('Timeout talking to NVP.',
                                        'Will retry %s more times.')),
-                             retries)
+                             retries - 1)
 
-            # NOTE(jkoelker) Lets be nice(er) to NVP with an exponential
-            #                backoff.
-            time.sleep(backoff)
-            backoff = backoff ** 2
+        retries = retries - 1
 
-            return self.request(method, url, generationnumber=generationnumber,
-                                body=body, retries=retries, backoff=backoff,
-                                is_url_prepared=True, is_body_prepared=True)
+        # NOTE(jkoelker) Lets be nice(er) to NVP with an exponential
+        #                backoff.
+        time.sleep(backoff)
+        backoff = backoff ** 2
+
+        return self.request(method, url, generationnumber=generationnumber,
+                            body=body, retries=retries, backoff=backoff,
+                            is_url_prepared=True, is_body_prepared=True)
 
     def _handle_headers(self, resp):
         return
