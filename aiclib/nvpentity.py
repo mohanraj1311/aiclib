@@ -230,7 +230,7 @@ class SecurityRule(dict):
 
 class SecurityProfile(NVPEntity):
     # All security profile specific functionality has been implemented
-    #TODO: It now needs to be tested
+    # TODO: It now needs to be tested
     def __init__(self, connection, uuid=None):
         super(SecurityProfile, self).__init__(connection)
         self.uuid = uuid
@@ -310,15 +310,15 @@ class TransportConnector(dict):
     _valid_entries = [GRE, STT, BRIDGE, SECGRE, SECSTT]
 
     def __init__(self, tzone_uuid, connector_type):
-        if not connector_type in TransportConnector._valid_entries:
+        if connector_type not in TransportConnector._valid_entries:
             raise AttributeError("connector_type is invalid")
         self['tzone_uuid'] = tzone_uuid
         self['connector_type'] = connector_type
 
 
 class TransportNode(NVPEntity):
-    #All node specific functionality has been implemented
-    #TODO: It now needs to be tested
+    # All node specific functionality has been implemented
+    # TODO: It now needs to be tested
     def __init__(self, connection, uuid=None):
         super(TransportNode, self).__init__(connection)
         self.uuid = uuid
@@ -418,8 +418,8 @@ class TransportNode(NVPEntity):
 
 
 class GatewayService(NVPEntity):
-    #TODO: Basic support requires entity specific features on creation
-    #TODO: Add all entity specific features
+    # TODO: Basic support requires entity specific features on creation
+    # TODO: Add all entity specific features
     def __init__(self, connection, uuid=None):
         super(GatewayService, self).__init__(connection)
         self.uuid = uuid

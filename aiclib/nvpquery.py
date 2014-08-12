@@ -112,49 +112,49 @@ class NVPEntityQuery(NVPBaseQuery):
 
 
 class QOSQueueQuery(NVPEntityQuery):
-    #TODO: Add all entity specific features
+    # TODO: Add all entity specific features
 
     def results(self):
         return super(QOSQueueQuery, self).results()
 
 
 class SecurityProfileQuery(NVPEntityQuery):
-    #TODO: Add all entity specific features
+    # TODO: Add all entity specific features
 
     def results(self):
         return super(SecurityProfileQuery, self).results()
 
 
 class LRouterQuery(NVPEntityQuery):
-    #TODO: Add all entity specific features
+    # TODO: Add all entity specific features
 
     def results(self):
         return super(LRouterQuery, self).results()
 
 
 class TransportNodeQuery(NVPEntityQuery):
-    #TODO: Add all entity specific features
+    # TODO: Add all entity specific features
 
     def results(self):
         return super(TransportNodeQuery, self).results()
 
 
 class MDIServiceQuery(NVPEntityQuery):
-    #TODO: Add all entity specific features
+    # TODO: Add all entity specific features
 
     def results(self):
         return super(MDIServiceQuery, self).results()
 
 
 class TransportZoneQuery(NVPEntityQuery):
-    #TODO: Add all entity specific features
+    # TODO: Add all entity specific features
 
     def results(self):
         return super(TransportZoneQuery, self).results()
 
 
 class GatewayServiceQuery(NVPEntityQuery):
-    #TODO: Add all entity specific features
+    # TODO: Add all entity specific features
 
     def results(self):
         return super(GatewayServiceQuery, self).results()
@@ -275,5 +275,5 @@ class LSwitchQuery(NVPEntityQuery):
         return self
 
     def results(self):
-        #TODO: This may require some modifications at this level
+        # TODO: This may require some modifications at this level
         return super(LSwitchQuery, self).results()

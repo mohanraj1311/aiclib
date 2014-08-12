@@ -36,10 +36,10 @@ def grab_uuid_of_type(text_or_dict, nvptype):
         return text_or_dict
     errormsg = "Missing key (%s) from dictionary when expected."
     typeerror = "Incorrect type (%s); expected %s"
-    if not 'uuid' in text_or_dict:
+    if 'uuid' not in text_or_dict:
         logger.error(errormsg % "uuid")
         raise TypeError(errormsg % "uuid")
-    if nvptype and not 'type' in text_or_dict:
+    if nvptype and 'type' not in text_or_dict:
         logger.error(errormsg % "type")
         raise TypeError(errormsg % "type")
         if text_or_dict['type'] != nvptype:
