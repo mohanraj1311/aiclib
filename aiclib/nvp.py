@@ -22,6 +22,7 @@ Created on August 23, 2012
 
 import json
 import logging
+import time
 
 import common
 import core
@@ -139,12 +140,18 @@ class Connection(core.CoreLib):
     def _action(self, entity, method, resource):
         """Will inject generation ID into the JSON result object if it exists
         """
+        # Changes to get the elapsed time
+        starttime = time.time()
         try:
             r = super(Connection, self)._action(entity, method, resource)
         except core.AICException as e:
             logger.exception('AICException')
             self.handle_status_code(e.code, iserror=True, message=e.message)
-
+        endtime = time.time() - starttime
+        logger.info("(%s @ %s):%s:Elapsed time %.3f" % (method,
+                                                        resource,
+                                                        entity._unroll(),
+                                                        endtime))
         self.handle_status_code(r.status)
         responselength = 0
         generationid = None
